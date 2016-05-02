@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Hugo Blog Template for GitHub Pages</title>
+    <title>veehan</title>
     <link>http://veehan.github.io/</link>
-    <description>Recent content on Hugo Blog Template for GitHub Pages</description>
+    <description>Recent content on veehan</description>
     <generator>Hugo -- gohugo.io</generator>
     <lastBuildDate>Sun, 01 May 2016 00:00:00 +0000</lastBuildDate>
     <atom:link href="http://veehan.github.io/index.xml" rel="self" type="application/rss+xml" />
