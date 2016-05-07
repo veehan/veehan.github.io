@@ -10,11 +10,11 @@
     <atom:link href="http://veehan.github.io/categories/android/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
-      <title>GoogleCTF 2016 - Little Bobby Tables</title>
-      <link>http://veehan.github.io/posts/google_ctf_16_little_bobby_tables/</link>
+      <title>GoogleCTF 2016 - Little Bobby Application</title>
+      <link>http://veehan.github.io/posts/google_ctf_16_little_bobby_application/</link>
       <pubDate>Tue, 03 May 2016 09:49:11 -0400</pubDate>
       
-      <guid>http://veehan.github.io/posts/google_ctf_16_little_bobby_tables/</guid>
+      <guid>http://veehan.github.io/posts/google_ctf_16_little_bobby_application/</guid>
       <description>&lt;blockquote&gt;
 &lt;p&gt;Find the vulnerability, develop an exploit, and when you&amp;rsquo;re ready, submit your APK to &lt;a href=&#34;https://bottle-brush-tree.ctfcompetition.com&#34;&gt;https://bottle-brush-tree.ctfcompetition.com&lt;/a&gt;. Can take up to 15 minutes to return the result.&lt;/p&gt;
 &lt;/blockquote&gt;
