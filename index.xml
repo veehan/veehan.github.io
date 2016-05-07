@@ -6,8 +6,63 @@
     <description>Recent content on Veehan&#39;s Blog</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Sun, 01 May 2016 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Tue, 03 May 2016 09:49:11 -0400</lastBuildDate>
     <atom:link href="http://veehan.github.io/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>GoogleCTF 2016 - Little Bobby Tables</title>
+      <link>http://veehan.github.io/posts/google_ctf_16_little_bobby_tables/</link>
+      <pubDate>Tue, 03 May 2016 09:49:11 -0400</pubDate>
+      
+      <guid>http://veehan.github.io/posts/google_ctf_16_little_bobby_tables/</guid>
+      <description>&lt;blockquote&gt;
+&lt;p&gt;Find the vulnerability, develop an exploit, and when you&amp;rsquo;re ready, submit your APK to &lt;a href=&#34;https://bottle-brush-tree.ctfcompetition.com&#34;&gt;https://bottle-brush-tree.ctfcompetition.com&lt;/a&gt;. Can take up to 15 minutes to return the result.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Firing up the application, the user is presented with a login screen along with a registration button. The title is a reference to an &lt;a href=&#34;https://xkcd.com/327/&#34;&gt;XKCD comic about SQL injection&lt;/a&gt;, so it stands to reason that getting to the flag will require some sort of injection along the way. It wasn&amp;rsquo;t totally clear why we&amp;rsquo;d have to submit an APK. Inputting a &amp;ldquo;&amp;rsquo; OR &amp;lsquo;1&amp;rsquo;=&amp;lsquo;1&amp;rsquo;;&amp;ndash;&amp;rdquo; in the username for the application causes the application to print in logcat &lt;code&gt;Does the user exist: true&lt;/code&gt;. Putting something a bit more mangled in there causes it to crash. Both of these results are promising. It wasn&amp;rsquo;t totally clear why we&amp;rsquo;d have to submit an APK, but since we&amp;rsquo;re exploiting a SQL database, and we weren&amp;rsquo;t given one with the APK, it stands to reason it resides on that server.&lt;/p&gt;
+
+&lt;p&gt;Using apktool to extract the apps manifest file and resource files, &lt;code&gt;apktool d BobbyApplication_CTF.apk&lt;/code&gt;, nothing stands out immediately in the manifest. There are three activities, the login activity (which is the main activity), a registration activity, and a &amp;ldquo;landing&amp;rdquo; activity. The strings resource file &lt;code&gt;res/values/strings.xml&lt;/code&gt; doesn&amp;rsquo;t have anything interesting in it either.&lt;/p&gt;
+
+&lt;p&gt;Next, taking a look at it with jadx-gui, a LocalDatabaseHelper class exists. The database contains four fields according to this class (and we can check by registering a user in the APK and inspecting the sqlite database generated): username, password, salt, flag. The flag field is generated as:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;values.put(UserEntry.COLUMN_NAME_FLAG, &amp;quot;ctf{An injection is all you need to get this flag - &amp;quot; + password_hash + &amp;quot;}&amp;quot;);
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Every database query in this class is handled as a rawQuery with the username input fed directly into the query without sanitization, which explains why we&amp;rsquo;re able to control the query. For example:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;Cursor c = db.rawQuery(&amp;quot;select password,salt from users where username = \&amp;quot;&amp;quot; + username + &amp;quot;\&amp;quot;&amp;quot;, null);
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;So, this confirms that the injection is occurring in the username input (and importantly, not in the password input).&lt;/p&gt;
+
+&lt;p&gt;Looking at the LoginActivity, which the manifest told us is the main activity, we see that it registers an un-permissioned broadcast receiver which filters for intents with action type &lt;code&gt;com.bobbytables.ctf.myapplication_INTENT&lt;/code&gt;; this receiver then passes the intents to the LoginReceiver class which checks the login and returns the result via a broadcast with action &lt;code&gt;com.bobbytables.ctf.myapplication_INTENT&lt;/code&gt;. This means we can perform our injection from another application, which makes the whole uploading of an APK thing make a bit more sense. The uploaded APK must run on an AVD which is also running the vulnerable application. Further, after uploading a test APK, we see that what we get back is the logcat output of the AVD. Perfect; we should be able to do a SQL injection against the vulnerable application, change the password hash for the first user, then login as that user.&lt;/p&gt;
+
+&lt;p&gt;read the flag column of the first row (assumption: there&amp;rsquo;s only one user), and print it to logcat.&lt;/p&gt;
+
+&lt;p&gt;This was totally the wrong route to take (why did we think logging in was even what we needed to do when there was a flag field?). After a couple hours trying to determine why our injection to modify the database wasn&amp;rsquo;t working, we finally noticed that with the exception of the insert() function in the LocalDatabaseHelper class, all the databases were opened read-only: &lt;code&gt;SQLiteDatabase db = getReadableDatabase();&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;It slowly dawned on us that we needed to read the contents of the flag column of the first row and print it to logcat. But the only thing that&amp;rsquo;s returned from the application is either a login failed/succeeded message. We found out we could force it to successfully get past the user check earlier. The checkLogin() function just checks if anything was returned, and if so it uses the first row. So if we select all rows with a &lt;code&gt;where username = &amp;quot;&amp;quot; OR &amp;quot;1&amp;quot; = &amp;quot;1&amp;quot;&lt;/code&gt; type injection, it&amp;rsquo;ll determine the user exists and use the first row, then try the password. After printing the username to logcat, it tests to see if the query returns any rows; if none are returned, it returns &amp;ldquo;User does not exist&amp;rdquo; and also writes this to logcat. Otherwise, the user exists and (assuming our password is wrong) it&amp;rsquo;ll return and print to logcat &amp;ldquo;Incorrect password&amp;rdquo;.&lt;/p&gt;
+
+&lt;p&gt;This binary success/fail information can be used to leak information about any one character in any field in the table by using the &lt;a href=&#34;https://www.sqlite.org/lang_corefunc.html&#34;&gt;substr command&lt;/a&gt; in sqlite. The injection to do this looks something like this:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;//returns &amp;quot;Incorrect password&amp;quot; if first character is &#39;a&#39;, else returns &amp;quot;User does not exist&amp;quot; if the first character is not &#39;a&#39;
+
+int position_to_test = 1; //sqlite indexes starting at 1
+char char_to_test = &#39;a&#39;; //test if the first character is a
+
+Intent inputIntent = new Intent();
+inputIntent.setAction(&amp;quot;com.bobbytables.ctf.myapplication_INTENT&amp;quot;);
+inputIntent.putExtra(&amp;quot;username&amp;quot;, &amp;quot;\&amp;quot; or substr(password,&amp;quot; + position_to_test + &amp;quot;,1) = \&amp;quot;&amp;quot; + char_to_test);
+inputIntent.putExtra(&amp;quot;password&amp;quot;, &amp;quot;password&amp;quot;);
+context.sendBroadcast(inputIntent);
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;The rest of the challenge is packaging this up into an APK which can extract the entire contents of the flag column from the first row in the users table by iterating over every position in the string and testing every reasonable character it could be (alphanumeric, whitespace, &amp;ldquo;{&amp;rdquo;, &amp;ldquo;}&amp;rdquo;) and having it print the flag out to logcat for extraction from the logs sent back by the APK upload service. There&amp;rsquo;s a ton of different ways to accomplish this. Admittedly, our solution wasn&amp;rsquo;t very pretty (it involved a broadcast receiver which looped infinitely and kept track of its state with global variables) and sometimes skipped characters in the string (causing us to have to submit it multiple times to extract the full string). But eventually we were able to extract the flag below:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;ctf{An injection is all you need to get this flag - 106b826d7d5ec465b0c5d385a41c6ff6}
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
     
     <item>
       <title>GoogleCTF 2016 - Ill Intentions (and Can You Repo It?) Write-up</title>
@@ -19,7 +74,7 @@
 &lt;p&gt;Do you have have ill intentions?&lt;/p&gt;
 &lt;/blockquote&gt;
 
-&lt;p&gt;This is an Android apk. The first thing I do is fire up the application to see what it does. I installed Android Studio and used the included SDK to fire up an Android Virtual Device (AVD). &lt;code&gt;adb install illinentions.apk&lt;/code&gt; installs it. Running the app doesn&amp;rsquo;t do much, but does provide a hint that it can change activities through some Send_to_Activity function (probably an intent)&lt;/p&gt;
+&lt;p&gt;This is an Android apk. The first thing I do is fire up the application to see what it does. I installed Android Studio and used the included SDK to fire up an Android Virtual Device (AVD). &lt;code&gt;adb install illintentions.apk&lt;/code&gt; installs it. Running the app doesn&amp;rsquo;t do much, but does provide a hint that it can change activities through some Send_to_Activity function (probably an intent)&lt;/p&gt;
 
 &lt;p&gt;Next, I used apktool and jadx-gui (a java decompiler) to determine how the application works. Using apktool first, I extracted a readable AndroidManifest.xml from the apk.&lt;/p&gt;
 
@@ -72,9 +127,9 @@
 
 &lt;/code&gt;&lt;/pre&gt;
 
-&lt;p&gt;Conincidentally, this keyPassword is the flag for &amp;ldquo;Can You Repo It?&amp;rdquo;. The keystore itself is located in the app directory. With the passwords and the keystore I can sign my own application with a matching signature, allowing an application I control to use the _MSG permission.&lt;/p&gt;
+&lt;p&gt;Coincidentally, this keyPassword is the flag for &amp;ldquo;Can You Repo It?&amp;rdquo;. The keystore itself is located in the app directory. With the passwords and the keystore I can sign my own application with a matching signature, allowing an application I control to use the _MSG permission.&lt;/p&gt;
 
-&lt;p&gt;Opening the apk with jadx-gui decompiles it. All three of the activites besides main do a bunch of string operations that I&amp;rsquo;m not going to worry about right at this moment. More importantly, the following in MainActivity confirms that the _MSG permission is required to use the receiver:&lt;/p&gt;
+&lt;p&gt;Opening the apk with jadx-gui decompiles it. All three of the activities besides main do a bunch of string operations that I&amp;rsquo;m not going to worry about right at this moment. More importantly, the following in MainActivity confirms that the _MSG permission is required to use the receiver:&lt;/p&gt;
 
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;IntentFilter filter = new IntentFilter();
 filter.addAction(&amp;quot;com.ctf.INCOMING_INTENT&amp;quot;);

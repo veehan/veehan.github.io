@@ -7,27 +7,27 @@
         <meta charset="utf-8" />
         <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 
-        <meta property="og:title" content=" GoogleCTF 2016 - Ill Intentions (and Can You Repo It?) Write-up &middot;  Veehan&#39;s Blog" />
+        <meta property="og:title" content=" GoogleCTF 2016 - Little Bobby Tables &middot;  Veehan&#39;s Blog" />
         <meta property="og:site_name" content="Veehan&#39;s Blog" />
-        <meta property="og:url" content="http://veehan.github.io/posts/google_ctf_16_ill_intentions/" />
+        <meta property="og:url" content="http://veehan.github.io/posts/google_ctf_16_little_bobby_tables/" />
 
     
         <meta property="og:type" content="article" />
-        <meta property="og:article:published_time" content="2016-05-01T00:00:00Z" />
+        <meta property="og:article:published_time" content="2016-05-03T09:49:11-04:00" />
         
 
         <meta name="twitter:card" content="summary" />
         <meta name="twitter:site" content="@" />
         <meta name="twitter:creator" content="@" />
-        <meta name="twitter:title" content="GoogleCTF 2016 - Ill Intentions (and Can You Repo It?) Write-up" />
-        <meta name="twitter:description" content="Write-up of the Ill Intentions (and Can You Repo It?) mobile challenge from Google&#39;s 2016 CTF" />
-        <meta name="twitter:url" content="http://veehan.github.io/posts/google_ctf_16_ill_intentions/" />
+        <meta name="twitter:title" content="GoogleCTF 2016 - Little Bobby Tables" />
+        <meta name="twitter:description" content="Write up of the GoogleCTF 2016 Little Bobby Tables mobile challenge 250pts" />
+        <meta name="twitter:url" content="http://veehan.github.io/posts/google_ctf_16_little_bobby_tables/" />
     
 
-        <title> GoogleCTF 2016 - Ill Intentions (and Can You Repo It?) Write-up &middot;  Veehan&#39;s Blog</title>
+        <title> GoogleCTF 2016 - Little Bobby Tables &middot;  Veehan&#39;s Blog</title>
 
     
-        <meta name="description" content="Write-up of the Ill Intentions (and Can You Repo It?) mobile challenge from Google&#39;s 2016 CTF" />
+        <meta name="description" content="Write up of the GoogleCTF 2016 Little Bobby Tables mobile challenge 250pts" />
     
         
         <meta name="p:domain_verify" content="fc173d84e3a4de948ed4bda2908afd3e"/>
@@ -43,21 +43,21 @@
     
 
     
-        <link rel="canonical" href="http://veehan.github.io/posts/google_ctf_16_ill_intentions/" />
+        <link rel="canonical" href="http://veehan.github.io/posts/google_ctf_16_little_bobby_tables/" />
 
     
     <script type="application/ld+json">
     { 
         "@context": "http://schema.org",
         "@type": "Article",
-        "headline": "GoogleCTF 2016 - Ill Intentions (and Can You Repo It?) Write-up",
+        "headline": "GoogleCTF 2016 - Little Bobby Tables",
         "author": {
             "@type": "Person",
             "name": "http://profiles.google.com/?rel=author"
         },
-        "datePublished": "2016-05-01",
-        "description": "Write-up of the Ill Intentions (and Can You Repo It?) mobile challenge from Google\x27s 2016 CTF",
-        "wordCount":  975 
+        "datePublished": "2016-05-03",
+        "description": "Write up of the GoogleCTF 2016 Little Bobby Tables mobile challenge 250pts",
+        "wordCount":  969 
     }
     </script>
     
@@ -70,7 +70,7 @@
         <header id="header">
             
             <h1><a href="http://veehan.github.io/">Veehan&#39;s Blog</a></h1>
-            <p>Write-up of the Ill Intentions (and Can You Repo It?) mobile challenge from Google&#39;s 2016 CTF</p>
+            <p>Write up of the GoogleCTF 2016 Little Bobby Tables mobile challenge 250pts</p>
 
             <div id="follow-icons">
 	<a href="http://facebook.com/zenithar" rel="me"><i class="fa fa-facebook-square fa-2x"></i></a>
@@ -87,151 +87,65 @@
 
 <article id="" class="posts">
     <div class="post-stamp">
-        <time datetime="2016-05-01T00:00:00Z">
-            1 May 2016
+        <time datetime="2016-05-03T09:49:11-04:00">
+            3 May 2016
         </time>
         <span class="taglist">
         
         </span>
     </div>
-    <h1 class="post-title">GoogleCTF 2016 - Ill Intentions (and Can You Repo It?) Write-up</h1>
+    <h1 class="post-title">GoogleCTF 2016 - Little Bobby Tables</h1>
     <blockquote>
-<p>Do you have have ill intentions?</p>
+<p>Find the vulnerability, develop an exploit, and when you&rsquo;re ready, submit your APK to <a href="https://bottle-brush-tree.ctfcompetition.com">https://bottle-brush-tree.ctfcompetition.com</a>. Can take up to 15 minutes to return the result.</p>
 </blockquote>
 
-<p>This is an Android apk. The first thing I do is fire up the application to see what it does. I installed Android Studio and used the included SDK to fire up an Android Virtual Device (AVD). <code>adb install illintentions.apk</code> installs it. Running the app doesn&rsquo;t do much, but does provide a hint that it can change activities through some Send_to_Activity function (probably an intent)</p>
+<p>Firing up the application, the user is presented with a login screen along with a registration button. The title is a reference to an <a href="https://xkcd.com/327/">XKCD comic about SQL injection</a>, so it stands to reason that getting to the flag will require some sort of injection along the way. It wasn&rsquo;t totally clear why we&rsquo;d have to submit an APK. Inputting a &ldquo;&rsquo; OR &lsquo;1&rsquo;=&lsquo;1&rsquo;;&ndash;&rdquo; in the username for the application causes the application to print in logcat <code>Does the user exist: true</code>. Putting something a bit more mangled in there causes it to crash. Both of these results are promising. It wasn&rsquo;t totally clear why we&rsquo;d have to submit an APK, but since we&rsquo;re exploiting a SQL database, and we weren&rsquo;t given one with the APK, it stands to reason it resides on that server.</p>
 
-<p>Next, I used apktool and jadx-gui (a java decompiler) to determine how the application works. Using apktool first, I extracted a readable AndroidManifest.xml from the apk.</p>
+<p>Using apktool to extract the apps manifest file and resource files, <code>apktool d BobbyApplication_CTF.apk</code>, nothing stands out immediately in the manifest. There are three activities, the login activity (which is the main activity), a registration activity, and a &ldquo;landing&rdquo; activity. The strings resource file <code>res/values/strings.xml</code> doesn&rsquo;t have anything interesting in it either.</p>
 
-<pre><code class="language-xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot; standalone=&quot;no&quot;?&gt;
-&lt;manifest xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot; package=&quot;com.example.hellojni&quot; platformBuildVersionCode=&quot;22&quot; platformBuildVersionName=&quot;5.1.1-1819727&quot;&gt;
-    &lt;permission android:description=&quot;@string/android.permission._msg&quot; android:name=&quot;ctf.permission._MSG&quot; android:protectionLevel=&quot;signature&quot;/&gt;
-    &lt;permission android:description=&quot;@string/android.permission._msg&quot; android:name=&quot;ctf.permission._SEND&quot;/&gt;
-    &lt;application android:icon=&quot;@mipmap/ic_launcher&quot; android:label=&quot;CTF Application&quot;&gt;
-        &lt;activity android:label=&quot;Main Activity&quot; android:name=&quot;com.example.application.MainActivity&quot;&gt;
-            &lt;intent-filter&gt;
-                &lt;action android:name=&quot;android.intent.action.MAIN&quot;/&gt;
-                &lt;category android:name=&quot;android.intent.category.LAUNCHER&quot;/&gt;
-            &lt;/intent-filter&gt;
-        &lt;/activity&gt;
-        &lt;activity android:label=&quot;Activity: Is This The Real One&quot; android:name=&quot;com.example.application.IsThisTheRealOne&quot;/&gt;
-        &lt;activity android:label=&quot;This Is The Real One&quot; android:name=&quot;com.example.application.ThisIsTheRealOne&quot;/&gt;
-        &lt;activity android:label=&quot;Definitely Not This One&quot; android:name=&quot;com.example.application.DefinitelyNotThisOne&quot;/&gt;
-        &lt;receiver android:exported=&quot;true&quot; android:name=&quot;com.example.application.Send_to_Activity&quot;/&gt;
-    &lt;/application&gt;
-&lt;/manifest&gt;
+<p>Next, taking a look at it with jadx-gui, a LocalDatabaseHelper class exists. The database contains four fields according to this class (and we can check by registering a user in the APK and inspecting the sqlite database generated): username, password, salt, flag. The flag field is generated as:</p>
+
+<pre><code class="language-java">values.put(UserEntry.COLUMN_NAME_FLAG, &quot;ctf{An injection is all you need to get this flag - &quot; + password_hash + &quot;}&quot;);
 </code></pre>
 
-<p>Immediately what stands out are the custom permissions which are declared. One has a protection level of &ldquo;signature&rdquo;, which means that in order to use the <code>ctf.permission._MSG</code> permission, the activity must share the same developer signature. I also noticed that there&rsquo;s three activities aside from the launched one, <code>com.example.application.IsThisTheRealOne</code>, <code>com.example.application.ThisIsTheRealOne</code>, <code>com.example.application.DefinitelyNotThisOne</code>, and there&rsquo;s a receiver called <code>com.example.application.Send_to_Activity</code>. It&rsquo;s safe to assume that the receiver requires the _MSG permission from the app sending the intent, but I&rsquo;ll double check this in jadx. While I&rsquo;m here though, I&rsquo;ll also check out the res directory that apktool produced. Inside the res/values/ directory there&rsquo;s a strings.xml with the following contents:</p>
+<p>Every database query in this class is handled as a rawQuery with the username input fed directly into the query without sanitization, which explains why we&rsquo;re able to control the query. For example:</p>
 
-<pre><code class="language-xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
-&lt;resources&gt;
-    &lt;string name=&quot;android.permission._msg&quot;&gt;Msg permission for this app&lt;/string&gt;
-    &lt;string name=&quot;app_name&quot;&gt;SendAnIntentApplication&lt;/string&gt;
-    &lt;string name=&quot;dev_name&quot;&gt;Leetdev&lt;/string&gt;
-    &lt;string name=&quot;flag&quot;&gt;Qvq lbh guvax vg jbhyq or gung rnfl?&lt;/string&gt;
-    &lt;string name=&quot;git_user&quot;&gt;l33tdev42&lt;/string&gt;
-    &lt;string name=&quot;str1&quot;&gt;`wTtqnVfxfLtxKB}YWFqqnXaOIck`&lt;/string&gt;
-    &lt;string name=&quot;str2&quot;&gt;IIjsWa}iy&lt;/string&gt;
-    &lt;string name=&quot;str3&quot;&gt;TRytfrgooq|F{i-JovFBungFk&lt;/string&gt;
-    &lt;string name=&quot;str4&quot;&gt;H0l3kwjo1|+kdl^polr&lt;/string&gt;
-    &lt;string name=&quot;test&quot;&gt;Test String for debugging&lt;/string&gt;
-&lt;/resources&gt;
+<pre><code class="language-java">Cursor c = db.rawQuery(&quot;select password,salt from users where username = \&quot;&quot; + username + &quot;\&quot;&quot;, null);
 </code></pre>
 
-<p>I tried sending this flag in, but it didn&rsquo;t work so it might be encoded. Some of the other strings are mysterious, however the git_user and dev_name strings stand out as interesting. Navigating to <a href="https://github.com/l33tdev42/">https://github.com/l33tdev42/</a> takes us to the developers repository, and checking the commit history reveals a commit that has the message &ldquo;Oops. removing the passcodes&rdquo;. Clicking on this commit shows the build.gradle file along with the keystore config information:</p>
+<p>So, this confirms that the injection is occurring in the username input (and importantly, not in the password input).</p>
 
-<pre><code class="language-gradle"> -    signingConfigs {
- -        create(&quot;release&quot;) {
- -            storeFile = file(&quot;leetdev_android.keystore&quot;)
- -            storePassword = &quot;!lPpR4UC6JYaUj&quot;
- -            keyAlias = &quot;appsKeys&quot;
- -            keyPassword = &quot;ctf{TheHairCutTookALoadOffMyMind}&quot;
- -        }
- -    }
+<p>Looking at the LoginActivity, which the manifest told us is the main activity, we see that it registers an un-permissioned broadcast receiver which filters for intents with action type <code>com.bobbytables.ctf.myapplication_INTENT</code>; this receiver then passes the intents to the LoginReceiver class which checks the login and returns the result via a broadcast with action <code>com.bobbytables.ctf.myapplication_INTENT</code>. This means we can perform our injection from another application, which makes the whole uploading of an APK thing make a bit more sense. The uploaded APK must run on an AVD which is also running the vulnerable application. Further, after uploading a test APK, we see that what we get back is the logcat output of the AVD. Perfect; we should be able to do a SQL injection against the vulnerable application, change the password hash for the first user, then login as that user.</p>
 
+<p>read the flag column of the first row (assumption: there&rsquo;s only one user), and print it to logcat.</p>
+
+<p>This was totally the wrong route to take (why did we think logging in was even what we needed to do when there was a flag field?). After a couple hours trying to determine why our injection to modify the database wasn&rsquo;t working, we finally noticed that with the exception of the insert() function in the LocalDatabaseHelper class, all the databases were opened read-only: <code>SQLiteDatabase db = getReadableDatabase();</code>.</p>
+
+<p>It slowly dawned on us that we needed to read the contents of the flag column of the first row and print it to logcat. But the only thing that&rsquo;s returned from the application is either a login failed/succeeded message. We found out we could force it to successfully get past the user check earlier. The checkLogin() function just checks if anything was returned, and if so it uses the first row. So if we select all rows with a <code>where username = &quot;&quot; OR &quot;1&quot; = &quot;1&quot;</code> type injection, it&rsquo;ll determine the user exists and use the first row, then try the password. After printing the username to logcat, it tests to see if the query returns any rows; if none are returned, it returns &ldquo;User does not exist&rdquo; and also writes this to logcat. Otherwise, the user exists and (assuming our password is wrong) it&rsquo;ll return and print to logcat &ldquo;Incorrect password&rdquo;.</p>
+
+<p>This binary success/fail information can be used to leak information about any one character in any field in the table by using the <a href="https://www.sqlite.org/lang_corefunc.html">substr command</a> in sqlite. The injection to do this looks something like this:</p>
+
+<pre><code class="language-java">//returns &quot;Incorrect password&quot; if first character is 'a', else returns &quot;User does not exist&quot; if the first character is not 'a'
+
+int position_to_test = 1; //sqlite indexes starting at 1
+char char_to_test = 'a'; //test if the first character is a
+
+Intent inputIntent = new Intent();
+inputIntent.setAction(&quot;com.bobbytables.ctf.myapplication_INTENT&quot;);
+inputIntent.putExtra(&quot;username&quot;, &quot;\&quot; or substr(password,&quot; + position_to_test + &quot;,1) = \&quot;&quot; + char_to_test);
+inputIntent.putExtra(&quot;password&quot;, &quot;password&quot;);
+context.sendBroadcast(inputIntent);
 </code></pre>
 
-<p>Coincidentally, this keyPassword is the flag for &ldquo;Can You Repo It?&rdquo;. The keystore itself is located in the app directory. With the passwords and the keystore I can sign my own application with a matching signature, allowing an application I control to use the _MSG permission.</p>
+<p>The rest of the challenge is packaging this up into an APK which can extract the entire contents of the flag column from the first row in the users table by iterating over every position in the string and testing every reasonable character it could be (alphanumeric, whitespace, &ldquo;{&rdquo;, &ldquo;}&rdquo;) and having it print the flag out to logcat for extraction from the logs sent back by the APK upload service. There&rsquo;s a ton of different ways to accomplish this. Admittedly, our solution wasn&rsquo;t very pretty (it involved a broadcast receiver which looped infinitely and kept track of its state with global variables) and sometimes skipped characters in the string (causing us to have to submit it multiple times to extract the full string). But eventually we were able to extract the flag below:</p>
 
-<p>Opening the apk with jadx-gui decompiles it. All three of the activities besides main do a bunch of string operations that I&rsquo;m not going to worry about right at this moment. More importantly, the following in MainActivity confirms that the _MSG permission is required to use the receiver:</p>
-
-<pre><code class="language-java">IntentFilter filter = new IntentFilter();
-filter.addAction(&quot;com.ctf.INCOMING_INTENT&quot;);
-registerReceiver(new Send_to_Activity(), filter, permission._MSG, null);
+<pre><code>ctf{An injection is all you need to get this flag - 106b826d7d5ec465b0c5d385a41c6ff6}
 </code></pre>
-
-<p>The Send_to_Activity activity selects one of the other activities based on the contents of the intent&rsquo;s &ldquo;msg&rdquo; field:</p>
-
-<pre><code class="language-java">public void onReceive(Context context, Intent intent) {
-        String msgText = intent.getStringExtra(&quot;msg&quot;);
-        if (msgText.equalsIgnoreCase(&quot;ThisIsTheRealOne&quot;)) {
-            context.startActivity(new Intent(context, ThisIsTheRealOne.class));
-        } else if (msgText.equalsIgnoreCase(&quot;IsThisTheRealOne&quot;)) {
-            context.startActivity(new Intent(context, IsThisTheRealOne.class));
-        } else if (msgText.equalsIgnoreCase(&quot;DefinitelyNotThisOne&quot;)) {
-            context.startActivity(new Intent(context, DefinitelyNotThisOne.class));
-        } else {
-            Toast.makeText(context, &quot;Which Activity do you wish to interact with?&quot;, 1).show();
-        }
-    }
-</code></pre>
-
-<p>And looking at the other activities shows us that they broadcast out a result which also requires the _MSG permission:</p>
-
-<pre><code class="language-java">Intent intent = new Intent();
-intent.setAction(&quot;com.ctf.OUTGOING_INTENT&quot;);
-intent.putExtra(&quot;msg&quot;, IsThisTheRealOne.this.perhapsThis(a, b, Utilities.doBoth(name.substring(0, name.length() - 2))));
-IsThisTheRealOne.this.sendBroadcast(intent, permission._MSG);
-</code></pre>
-
-<p>So the main idea is to create an application that can listen for the return broadcast; I can send the initial broadcast using adb since it&rsquo;ll run with root permissions on the AVD.</p>
-
-<p>There&rsquo;s probably more than one way to do this, such as writing a new app that listens and prints to logcat the results then signing it with the key from the keystore pulled off the github account. But I&rsquo;m lazy and just decided to run drozer on the device and use its broadcast sniffing functionality. In order to sniff the intent though, I needed to add the new permission to the manifest and resign it with the developers key. So, I extracted drozer with apktool, <code>apktool d drozer-agent-2.3.4.apk</code>, then added the following two lines to it&rsquo;s AndroidManifest.xml (the _SEND permission might be unnecessary but I added it anyhow):</p>
-
-<pre><code class="language-xml">&lt;uses-permission android:name=&quot;ctf.permission._MSG&quot;/&gt;
-&lt;uses-permission android:name=&quot;ctf.permission._SEND&quot;/&gt;
-</code></pre>
-
-<p>Then I rebuilt it, <code>apktool b drozer-agent-2.3.4/</code>, which drops the new apk in <code>drozer-agent-2.3.4/dist/</code>.</p>
-
-<p>Next, I removed the existing signature from the apk by unzipping it, deleting the META_INF directory, then rezipping the contents into a new .apk (which is just a renamed .zip). Then, I signed with the new keystore and zipaligned the signed apk</p>
-
-<pre><code class="language-bash">jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore leetdev_android.keystore drozer-agent-custom.apk appskeys
-zipalign -v 4 drozer-agent-custom.apk drozer-agent-custom-aligned.apk
-</code></pre>
-
-<p>I won&rsquo;t go over how to setup the drozer agent and the drozer client setup since that&rsquo;s covered elsewhere, but from the drozer command line I can setup the broadcast listener using the sniff package: <code>run app.broadcast.sniff --action com.ctf.OUTGOING_INTENT</code>. I can then send intents using adb: <code>adb shell am broadcast -a com.ctf.INCOMING_INTENT -e msg &lt;activity_name&gt;</code>. The results are below:</p>
-
-<pre><code class="language-bash">#ADB window:
-adb shell am broadcast -a com.ctf.INCOMING_INTENT -e msg DefinitelyNotThisOne
-Broadcasting: Intent { act=com.ctf.INCOMING_INTENT (has extras) }
-Broadcast completed: result=0
-
-adb shell am broadcast -a com.ctf.INCOMING_INTENT -e msg IsThisTheRealOne Broadcasting: Intent { act=com.ctf.INCOMING_INTENT (has extras) }
-Broadcast completed: result=0
-</code></pre>
-
-<pre><code class="language-bash">#Drozer Window:
-dz&gt; run app.broadcast.sniff --action com.ctf.OUTGOING_INTENT
-[*] Broadcast receiver registered to sniff matching intents
-[*] Output is updated once a second. Press Control+C to exit.
-
-Action: com.ctf.OUTGOING_INTENT
-Raw: Intent { act=com.ctf.OUTGOING_INTENT flg=0x10 (has extras) }
-Extra: msg=Told you so! (java.lang.String)
-
-Action: com.ctf.OUTGOING_INTENT
-Raw: Intent { act=com.ctf.OUTGOING_INTENT flg=0x10 (has extras) }
-Extra: msg=Congratulation!YouFoundTheRightActivityHereYouGo-CTF{IDontHaveABadjokeSorry} (java.lang.String)
-</code></pre>
-
-<p>And that&rsquo;s the flag!</p>
 
     <div id="social-bar">
 	<ul class="rrssb-buttons clearfix">
       <li class="email">
-          <a href="mailto:?subject=GoogleCTF%202016%20-%20Ill%20Intentions%20%28and%20Can%20You%20Repo%20It%3f%29%20Write-up&amp;body=http://veehan.github.io/posts/google_ctf_16_ill_intentions/">
+          <a href="mailto:?subject=GoogleCTF%202016%20-%20Little%20Bobby%20Tables&amp;body=http://veehan.github.io/posts/google_ctf_16_little_bobby_tables/">
               <span class="icon">
                   <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="28px" height="28px" viewBox="0 0 28 28" enable-background="new 0 0 28 28" xml:space="preserve">
                       <path transform="scale(0.014,-0.014) translate(0,-1670)" d="M1792 826v-794q0 -66 -47 -113t-113 -47h-1472q-66 0 -113 47t-47 113v794q44 -49 101 -87q362 -246 497 -345q57 -42 92.5 -65.5t94.5 -48t110 -24.5h1h1q51 0 110 24.5t94.5 48t92.5 65.5q170 123 498 345q57 39 100 87zM1792 1120q0 -79 -49 -151t-122 -123 q-376 -261 -468 -325q-10 -7 -42.5 -30.5t-54 -38t-52 -32.5t-57.5 -27t-50 -9h-1h-1q-23 0 -50 9t-57.5 27t-52 32.5t-54 38t-42.5 30.5q-91 64 -262 182.5t-205 142.5q-62 42 -117 115.5t-55 136.5q0 78 41.5 130t118.5 52h1472q65 0 112.5 -47t47.5 -113z"/>
@@ -241,7 +155,7 @@ Extra: msg=Congratulation!YouFoundTheRightActivityHereYouGo-CTF{IDontHaveABadjok
           </a>
       </li>
       <li class="facebook">
-          <a href="https://www.facebook.com/sharer/sharer.php?u=http://veehan.github.io/posts/google_ctf_16_ill_intentions/" class="popup">
+          <a href="https://www.facebook.com/sharer/sharer.php?u=http://veehan.github.io/posts/google_ctf_16_little_bobby_tables/" class="popup">
               <span class="icon">
                   <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="28px" height="28px" viewBox="0 0 28 28" enable-background="new 0 0 28 28" xml:space="preserve">
                       <path d="M27.825,4.783c0-2.427-2.182-4.608-4.608-4.608H4.783c-2.422,0-4.608,2.182-4.608,4.608v18.434 c0,2.427,2.181,4.608,4.608,4.608H14V17.379h-3.379v-4.608H14v-1.795c0-3.089,2.335-5.885,5.192-5.885h3.718v4.608h-3.726 c-0.408,0-0.884,0.492-0.884,1.236v1.836h4.609v4.608h-4.609v10.446h4.916c2.422,0,4.608-2.188,4.608-4.608V4.783z"/>
@@ -251,7 +165,7 @@ Extra: msg=Congratulation!YouFoundTheRightActivityHereYouGo-CTF{IDontHaveABadjok
           </a>
       </li>
 			<li class="twitter">
-          <a href="http://twitter.com/home?status=GoogleCTF%202016%20-%20Ill%20Intentions%20%28and%20Can%20You%20Repo%20It%3f%29%20Write-up%20http://veehan.github.io/posts/google_ctf_16_ill_intentions/" class="popup">
+          <a href="http://twitter.com/home?status=GoogleCTF%202016%20-%20Little%20Bobby%20Tables%20http://veehan.github.io/posts/google_ctf_16_little_bobby_tables/" class="popup">
               <span class="icon">
                   <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="28px" height="28px" viewBox="0 0 28 28" enable-background="new 0 0 28 28" xml:space="preserve">
 		                  <path d="M24.253,8.756C24.689,17.08,18.297,24.182,9.97,24.62c-3.122,0.162-6.219-0.646-8.861-2.32 c2.703,0.179,5.376-0.648,7.508-2.321c-2.072-0.247-3.818-1.661-4.489-3.638c0.801,0.128,1.62,0.076,2.399-0.155 C4.045,15.72,2.215,13.6,2.115,11.077c0.688,0.275,1.426,0.407,2.168,0.386c-2.135-1.65-2.729-4.621-1.394-6.965 C5.575,7.816,9.54,9.84,13.803,10.071c-0.842-2.739,0.694-5.64,3.434-6.482c2.018-0.623,4.212,0.044,5.546,1.683 c1.186-0.213,2.318-0.662,3.329-1.317c-0.385,1.256-1.247,2.312-2.399,2.942c1.048-0.106,2.069-0.394,3.019-0.851 C26.275,7.229,25.39,8.196,24.253,8.756z"/>
@@ -261,7 +175,7 @@ Extra: msg=Congratulation!YouFoundTheRightActivityHereYouGo-CTF{IDontHaveABadjok
           </a>
       </li>
 			<li class="linkedin">
-          <a href="http://www.linkedin.com/shareArticle?mini=true&amp;url=http://veehan.github.io/posts/google_ctf_16_ill_intentions/&amp;title=GoogleCTF%202016%20-%20Ill%20Intentions%20%28and%20Can%20You%20Repo%20It%3f%29%20Write-up&amp;summary=Do%20you%20have%20have%20ill%20intentions%3f%20This%20is%20an%20Android%20apk.%20The%20first%20thing%20I%20do%20is%20fire%20up%20the%20application%20to%20see%20what%20it%20does.%20I%20installed%20Android%20Studio%20and%20used%20the%20included%20SDK%20to%20fire%20up%20an%20Android%20Virtual%20Device%20%28AVD%29.%20adb%20install%20illintentions.apk%20installs%20it.%20Running%20the%20app%20doesn%26rsquo%3bt%20do%20much%2c%20but%20does%20provide%20a%20hint%20that%20it%20can%20change%20activities%20through%20some%20Send_to_Activity%20function%20%28probably%20an%20intent%29%20Next%2c%20I%20used%20apktool%20and%20jadx-gui%20%28a%20java%20decompiler%29%20to%20determine%20how%20the%20application%20works...." class="popup">
+          <a href="http://www.linkedin.com/shareArticle?mini=true&amp;url=http://veehan.github.io/posts/google_ctf_16_little_bobby_tables/&amp;title=GoogleCTF%202016%20-%20Little%20Bobby%20Tables&amp;summary=Find%20the%20vulnerability%2c%20develop%20an%20exploit%2c%20and%20when%20you%26rsquo%3bre%20ready%2c%20submit%20your%20APK%20to%20https%3a%2f%2fbottle-brush-tree.ctfcompetition.com.%20Can%20take%20up%20to%2015%20minutes%20to%20return%20the%20result.%20Firing%20up%20the%20application%2c%20the%20user%20is%20presented%20with%20a%20login%20screen%20along%20with%20a%20registration%20button.%20The%20title%20is%20a%20reference%20to%20an%20XKCD%20comic%20about%20SQL%20injection%2c%20so%20it%20stands%20to%20reason%20that%20getting%20to%20the%20flag%20will%20require%20some%20sort%20of%20injection%20along%20the%20way...." class="popup">
               <span class="icon">
                   <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="28px" height="28px" viewBox="0 0 28 28" enable-background="new 0 0 28 28" xml:space="preserve">
                       <path d="M25.424,15.887v8.447h-4.896v-7.882c0-1.979-0.709-3.331-2.48-3.331c-1.354,0-2.158,0.911-2.514,1.803 c-0.129,0.315-0.162,0.753-0.162,1.194v8.216h-4.899c0,0,0.066-13.349,0-14.731h4.899v2.088c-0.01,0.016-0.023,0.032-0.033,0.048 h0.033V11.69c0.65-1.002,1.812-2.435,4.414-2.435C23.008,9.254,25.424,11.361,25.424,15.887z M5.348,2.501 c-1.676,0-2.772,1.092-2.772,2.539c0,1.421,1.066,2.538,2.717,2.546h0.032c1.709,0,2.771-1.132,2.771-2.546 C8.054,3.593,7.019,2.501,5.343,2.501H5.348z M2.867,24.334h4.897V9.603H2.867V24.334z"/>
@@ -272,7 +186,7 @@ Extra: msg=Congratulation!YouFoundTheRightActivityHereYouGo-CTF{IDontHaveABadjok
       </li>
       <li class="tumblr">
 					<script>
-						document.write('<a href="http://www.tumblr.com/share?v=3&amp;u=' + encodeURIComponent('http:\/\/veehan.github.io\/posts\/google_ctf_16_ill_intentions\/') + '&amp;t=GoogleCTF 2016 - Ill Intentions (and Can You Repo It?) Write-up" class="popup">');
+						document.write('<a href="http://www.tumblr.com/share?v=3&amp;u=' + encodeURIComponent('http:\/\/veehan.github.io\/posts\/google_ctf_16_little_bobby_tables\/') + '&amp;t=GoogleCTF 2016 - Little Bobby Tables" class="popup">');
 					</script>
               <span class="icon">
                   <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" x="0px" y="0px" width="28px" height="28px" viewBox="0 0 28 28" enable-background="new 0 0 28 28" xml:space="preserve">
@@ -283,7 +197,7 @@ Extra: msg=Congratulation!YouFoundTheRightActivityHereYouGo-CTF{IDontHaveABadjok
           <script>document.write('</a>');</script>
       </li>
       <li class="reddit">
-          <a href="http://www.reddit.com/submit?url=http://veehan.github.io/posts/google_ctf_16_ill_intentions/">
+          <a href="http://www.reddit.com/submit?url=http://veehan.github.io/posts/google_ctf_16_little_bobby_tables/">
               <span class="icon">
                   <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" x="0px" y="0px" width="28px" height="28px" viewBox="0 0 28 28" enable-background="new 0 0 28 28" xml:space="preserve">
 											<g>
@@ -298,7 +212,7 @@ Extra: msg=Congratulation!YouFoundTheRightActivityHereYouGo-CTF{IDontHaveABadjok
           </a>
       </li>
       <li class="googleplus">
-          <a href="https://plus.google.com/share?url=http://veehan.github.io/posts/google_ctf_16_ill_intentions/" class="popup">
+          <a href="https://plus.google.com/share?url=http://veehan.github.io/posts/google_ctf_16_little_bobby_tables/" class="popup">
               <span class="icon">
                   <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="28px" height="28px" viewBox="0 0 28 28" enable-background="new 0 0 28 28" xml:space="preserve">
                       <g>
@@ -317,7 +231,7 @@ Extra: msg=Congratulation!YouFoundTheRightActivityHereYouGo-CTF{IDontHaveABadjok
 						if (firstimg !== undefined) {
 							imgurl = firstimg.src;
 						}
-						document.write('<a href="http://pinterest.com/pin/create/button/?url=http:\/\/veehan.github.io\/posts\/google_ctf_16_ill_intentions\/&amp;media=' + imgurl + '&amp;description=GoogleCTF 2016 - Ill Intentions (and Can You Repo It?) Write-up" class="popup">');
+						document.write('<a href="http://pinterest.com/pin/create/button/?url=http:\/\/veehan.github.io\/posts\/google_ctf_16_little_bobby_tables\/&amp;media=' + imgurl + '&amp;description=GoogleCTF 2016 - Little Bobby Tables" class="popup">');
 					</script>
               <span class="icon">
                   <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="28px" height="28px" viewBox="0 0 28 28" enable-background="new 0 0 28 28" xml:space="preserve">
@@ -328,7 +242,7 @@ Extra: msg=Congratulation!YouFoundTheRightActivityHereYouGo-CTF{IDontHaveABadjok
           <script>document.write('</a>');</script>
       </li>
       <li class="pocket">
-          <a href="https://getpocket.com/save?url=http://veehan.github.io/posts/google_ctf_16_ill_intentions/"  class="popup">
+          <a href="https://getpocket.com/save?url=http://veehan.github.io/posts/google_ctf_16_little_bobby_tables/"  class="popup">
               <span class="icon">
                   <svg width="32px" height="28px" viewBox="0 0 32 28" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:sketch="http://www.bohemiancoding.com/sketch/ns">
                       <path d="M28.7817528,0.00172488695 C30.8117487,0.00431221738 31.9749312,1.12074529 31.9644402,3.10781507 C31.942147,6.67703739 32.1336065,10.2669583 31.8057648,13.8090137 C30.7147076,25.5813672 17.2181194,31.8996281 7.20714461,25.3808491 C2.71833574,22.4571656 0.196577202,18.3122624 0.0549495772,12.9357897 C-0.0342233715,9.5774348 0.00642900214,6.21519891 0.0300336062,2.85555035 C0.0405245414,1.1129833 1.21157517,0.0146615391 3.01995012,0.00819321302 C7.34746087,-0.00603710433 11.6775944,0.00431221738 16.0064164,0.00172488695 C20.2644248,0.00172488695 24.5237444,-0.00215610869 28.7817528,0.00172488695 L28.7817528,0.00172488695 Z M8.64885184,7.85611511 C7.38773662,7.99113854 6.66148108,8.42606978 6.29310958,9.33228474 C5.90114134,10.2969233 6.17774769,11.1421181 6.89875951,11.8276216 C9.35282156,14.161969 11.8108164,16.4924215 14.2976518,18.7943114 C15.3844131,19.7966007 16.5354102,19.7836177 17.6116843,18.7813283 C20.0185529,16.5495467 22.4070683,14.2982907 24.7824746,12.0327533 C25.9845979,10.8850542 26.1012707,9.56468083 25.1469132,8.60653379 C24.1361858,7.59255976 22.8449191,7.6743528 21.5890476,8.85191291 C19.9936451,10.3488554 18.3680912,11.8172352 16.8395462,13.3777945 C16.1342655,14.093159 15.7200114,14.0048744 15.0566806,13.3440386 C13.4599671,11.7484252 11.8081945,10.2060421 10.1262706,8.70001155 C9.65564653,8.27936164 9.00411403,8.05345704 8.64885184,7.85611511 L8.64885184,7.85611511 L8.64885184,7.85611511 Z"></path>
