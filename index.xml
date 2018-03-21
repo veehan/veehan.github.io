@@ -6,8 +6,21 @@
     <description>Recent content on Veehan&#39;s Blog</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Tue, 03 May 2016 09:49:11 -0400</lastBuildDate>
-    <atom:link href="http://veehan.github.io/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Mon, 19 Mar 2018 18:18:41 -0700</lastBuildDate>
+    
+	<atom:link href="http://veehan.github.io/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Backdoorctf 2018 - Confundo</title>
+      <link>http://veehan.github.io/posts/backdoorctf_2018_confundo/</link>
+      <pubDate>Mon, 19 Mar 2018 18:18:41 -0700</pubDate>
+      
+      <guid>http://veehan.github.io/posts/backdoorctf_2018_confundo/</guid>
+      <description>(BackdoorCTF requests that flags aren&amp;rsquo;t included in write-ups, so I&amp;rsquo;ll refrain from including it and solution code here.)
+The challenge is presented as a single file, confundo.v. The description hint simply states that the author wanted to write a challenge in an obscure language.
+Inspecting the file, it&amp;rsquo;s immediately obvious this is a hardware description language, and if you&amp;rsquo;ve worked with these before you&amp;rsquo;ll probably recognize it as Verilog (if you haven&amp;rsquo;t, googling some of the syntax markers like endmodule will make it evident pretty quickly).</description>
+    </item>
     
     <item>
       <title>GoogleCTF 2016 - Little Bobby Application</title>
@@ -15,53 +28,8 @@
       <pubDate>Tue, 03 May 2016 09:49:11 -0400</pubDate>
       
       <guid>http://veehan.github.io/posts/google_ctf_16_little_bobby_application/</guid>
-      <description>&lt;blockquote&gt;
-&lt;p&gt;Find the vulnerability, develop an exploit, and when you&amp;rsquo;re ready, submit your APK to &lt;a href=&#34;https://bottle-brush-tree.ctfcompetition.com&#34;&gt;https://bottle-brush-tree.ctfcompetition.com&lt;/a&gt;. Can take up to 15 minutes to return the result.&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;Firing up the application, the user is presented with a login screen along with a registration button. The title is a reference to an &lt;a href=&#34;https://xkcd.com/327/&#34;&gt;XKCD comic about SQL injection&lt;/a&gt;, so it stands to reason that getting to the flag will require some sort of injection along the way. It wasn&amp;rsquo;t totally clear why we&amp;rsquo;d have to submit an APK. Inputting a &amp;ldquo;&amp;rsquo; OR &amp;lsquo;1&amp;rsquo;=&amp;lsquo;1&amp;rsquo;;&amp;ndash;&amp;rdquo; in the username for the application causes the application to print in logcat &lt;code&gt;Does the user exist: true&lt;/code&gt;. Putting something a bit more mangled in there causes it to crash. Both of these results are promising. It wasn&amp;rsquo;t totally clear why we&amp;rsquo;d have to submit an APK, but since we&amp;rsquo;re exploiting a SQL database, and we weren&amp;rsquo;t given one with the APK, it stands to reason it resides on that server.&lt;/p&gt;
-
-&lt;p&gt;Using apktool to extract the apps manifest file and resource files, &lt;code&gt;apktool d BobbyApplication_CTF.apk&lt;/code&gt;, nothing stands out immediately in the manifest. There are three activities, the login activity (which is the main activity), a registration activity, and a &amp;ldquo;landing&amp;rdquo; activity. The strings resource file &lt;code&gt;res/values/strings.xml&lt;/code&gt; doesn&amp;rsquo;t have anything interesting in it either.&lt;/p&gt;
-
-&lt;p&gt;Next, taking a look at it with jadx-gui, a LocalDatabaseHelper class exists. The database contains four fields according to this class (and we can check by registering a user in the APK and inspecting the sqlite database generated): username, password, salt, flag. The flag field is generated as:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;values.put(UserEntry.COLUMN_NAME_FLAG, &amp;quot;ctf{An injection is all you need to get this flag - &amp;quot; + password_hash + &amp;quot;}&amp;quot;);
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Every database query in this class is handled as a rawQuery with the username input fed directly into the query without sanitization, which explains why we&amp;rsquo;re able to control the query. For example:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;Cursor c = db.rawQuery(&amp;quot;select password,salt from users where username = \&amp;quot;&amp;quot; + username + &amp;quot;\&amp;quot;&amp;quot;, null);
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;So, this confirms that the injection is occurring in the username input (and importantly, not in the password input).&lt;/p&gt;
-
-&lt;p&gt;Looking at the LoginActivity, which the manifest told us is the main activity, we see that it registers an un-permissioned broadcast receiver which filters for intents with action type &lt;code&gt;com.bobbytables.ctf.myapplication_INTENT&lt;/code&gt;; this receiver then passes the intents to the LoginReceiver class which checks the login and returns the result via a broadcast with action &lt;code&gt;com.bobbytables.ctf.myapplication_INTENT&lt;/code&gt;. This means we can perform our injection from another application, which makes the whole uploading of an APK thing make a bit more sense. The uploaded APK must run on an AVD which is also running the vulnerable application. Further, after uploading a test APK, we see that what we get back is the logcat output of the AVD. Perfect; we should be able to do a SQL injection against the vulnerable application, change the password hash for the first user, then login as that user.&lt;/p&gt;
-
-&lt;p&gt;read the flag column of the first row (assumption: there&amp;rsquo;s only one user), and print it to logcat.&lt;/p&gt;
-
-&lt;p&gt;This was totally the wrong route to take (why did we think logging in was even what we needed to do when there was a flag field?). After a couple hours trying to determine why our injection to modify the database wasn&amp;rsquo;t working, we finally noticed that with the exception of the insert() function in the LocalDatabaseHelper class, all the databases were opened read-only: &lt;code&gt;SQLiteDatabase db = getReadableDatabase();&lt;/code&gt;.&lt;/p&gt;
-
-&lt;p&gt;It slowly dawned on us that we needed to read the contents of the flag column of the first row and print it to logcat. But the only thing that&amp;rsquo;s returned from the application is either a login failed/succeeded message. We found out we could force it to successfully get past the user check earlier. The checkLogin() function just checks if anything was returned, and if so it uses the first row. So if we select all rows with a &lt;code&gt;where username = &amp;quot;&amp;quot; OR &amp;quot;1&amp;quot; = &amp;quot;1&amp;quot;&lt;/code&gt; type injection, it&amp;rsquo;ll determine the user exists and use the first row, then try the password. After printing the username to logcat, it tests to see if the query returns any rows; if none are returned, it returns &amp;ldquo;User does not exist&amp;rdquo; and also writes this to logcat. Otherwise, the user exists and (assuming our password is wrong) it&amp;rsquo;ll return and print to logcat &amp;ldquo;Incorrect password&amp;rdquo;.&lt;/p&gt;
-
-&lt;p&gt;This binary success/fail information can be used to leak information about any one character in any field in the table by using the &lt;a href=&#34;https://www.sqlite.org/lang_corefunc.html&#34;&gt;substr command&lt;/a&gt; in sqlite. The injection to do this looks something like this:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;//returns &amp;quot;Incorrect password&amp;quot; if first character is &#39;a&#39;, else returns &amp;quot;User does not exist&amp;quot; if the first character is not &#39;a&#39;
-
-int position_to_test = 1; //sqlite indexes starting at 1
-char char_to_test = &#39;a&#39;; //test if the first character is a
-
-Intent inputIntent = new Intent();
-inputIntent.setAction(&amp;quot;com.bobbytables.ctf.myapplication_INTENT&amp;quot;);
-inputIntent.putExtra(&amp;quot;username&amp;quot;, &amp;quot;\&amp;quot; or substr(password,&amp;quot; + position_to_test + &amp;quot;,1) = \&amp;quot;&amp;quot; + char_to_test);
-inputIntent.putExtra(&amp;quot;password&amp;quot;, &amp;quot;password&amp;quot;);
-context.sendBroadcast(inputIntent);
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;The rest of the challenge is packaging this up into an APK which can extract the entire contents of the flag column from the first row in the users table by iterating over every position in the string and testing every reasonable character it could be (alphanumeric, whitespace, &amp;ldquo;{&amp;rdquo;, &amp;ldquo;}&amp;rdquo;) and having it print the flag out to logcat for extraction from the logs sent back by the APK upload service. There&amp;rsquo;s a ton of different ways to accomplish this. Admittedly, our solution wasn&amp;rsquo;t very pretty (it involved a broadcast receiver which looped infinitely and kept track of its state with global variables) and sometimes skipped characters in the string (causing us to have to submit it multiple times to extract the full string). But eventually we were able to extract the flag below:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;ctf{An injection is all you need to get this flag - 106b826d7d5ec465b0c5d385a41c6ff6}
-&lt;/code&gt;&lt;/pre&gt;
-</description>
+      <description>Find the vulnerability, develop an exploit, and when you&amp;rsquo;re ready, submit your APK to https://bottle-brush-tree.ctfcompetition.com. Can take up to 15 minutes to return the result.
+ Firing up the application, the user is presented with a login screen along with a registration button. The title is a reference to an XKCD comic about SQL injection, so it stands to reason that getting to the flag will require some sort of injection along the way.</description>
     </item>
     
     <item>
@@ -70,139 +38,8 @@ context.sendBroadcast(inputIntent);
       <pubDate>Sun, 01 May 2016 00:00:00 +0000</pubDate>
       
       <guid>http://veehan.github.io/posts/google_ctf_16_ill_intentions/</guid>
-      <description>&lt;blockquote&gt;
-&lt;p&gt;Do you have have ill intentions?&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;This is an Android apk. The first thing I do is fire up the application to see what it does. I installed Android Studio and used the included SDK to fire up an Android Virtual Device (AVD). &lt;code&gt;adb install illintentions.apk&lt;/code&gt; installs it. Running the app doesn&amp;rsquo;t do much, but does provide a hint that it can change activities through some Send_to_Activity function (probably an intent)&lt;/p&gt;
-
-&lt;p&gt;Next, I used apktool and jadx-gui (a java decompiler) to determine how the application works. Using apktool first, I extracted a readable AndroidManifest.xml from the apk.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-xml&#34;&gt;&amp;lt;?xml version=&amp;quot;1.0&amp;quot; encoding=&amp;quot;utf-8&amp;quot; standalone=&amp;quot;no&amp;quot;?&amp;gt;
-&amp;lt;manifest xmlns:android=&amp;quot;http://schemas.android.com/apk/res/android&amp;quot; package=&amp;quot;com.example.hellojni&amp;quot; platformBuildVersionCode=&amp;quot;22&amp;quot; platformBuildVersionName=&amp;quot;5.1.1-1819727&amp;quot;&amp;gt;
-    &amp;lt;permission android:description=&amp;quot;@string/android.permission._msg&amp;quot; android:name=&amp;quot;ctf.permission._MSG&amp;quot; android:protectionLevel=&amp;quot;signature&amp;quot;/&amp;gt;
-    &amp;lt;permission android:description=&amp;quot;@string/android.permission._msg&amp;quot; android:name=&amp;quot;ctf.permission._SEND&amp;quot;/&amp;gt;
-    &amp;lt;application android:icon=&amp;quot;@mipmap/ic_launcher&amp;quot; android:label=&amp;quot;CTF Application&amp;quot;&amp;gt;
-        &amp;lt;activity android:label=&amp;quot;Main Activity&amp;quot; android:name=&amp;quot;com.example.application.MainActivity&amp;quot;&amp;gt;
-            &amp;lt;intent-filter&amp;gt;
-                &amp;lt;action android:name=&amp;quot;android.intent.action.MAIN&amp;quot;/&amp;gt;
-                &amp;lt;category android:name=&amp;quot;android.intent.category.LAUNCHER&amp;quot;/&amp;gt;
-            &amp;lt;/intent-filter&amp;gt;
-        &amp;lt;/activity&amp;gt;
-        &amp;lt;activity android:label=&amp;quot;Activity: Is This The Real One&amp;quot; android:name=&amp;quot;com.example.application.IsThisTheRealOne&amp;quot;/&amp;gt;
-        &amp;lt;activity android:label=&amp;quot;This Is The Real One&amp;quot; android:name=&amp;quot;com.example.application.ThisIsTheRealOne&amp;quot;/&amp;gt;
-        &amp;lt;activity android:label=&amp;quot;Definitely Not This One&amp;quot; android:name=&amp;quot;com.example.application.DefinitelyNotThisOne&amp;quot;/&amp;gt;
-        &amp;lt;receiver android:exported=&amp;quot;true&amp;quot; android:name=&amp;quot;com.example.application.Send_to_Activity&amp;quot;/&amp;gt;
-    &amp;lt;/application&amp;gt;
-&amp;lt;/manifest&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Immediately what stands out are the custom permissions which are declared. One has a protection level of &amp;ldquo;signature&amp;rdquo;, which means that in order to use the &lt;code&gt;ctf.permission._MSG&lt;/code&gt; permission, the activity must share the same developer signature. I also noticed that there&amp;rsquo;s three activities aside from the launched one, &lt;code&gt;com.example.application.IsThisTheRealOne&lt;/code&gt;, &lt;code&gt;com.example.application.ThisIsTheRealOne&lt;/code&gt;, &lt;code&gt;com.example.application.DefinitelyNotThisOne&lt;/code&gt;, and there&amp;rsquo;s a receiver called &lt;code&gt;com.example.application.Send_to_Activity&lt;/code&gt;. It&amp;rsquo;s safe to assume that the receiver requires the _MSG permission from the app sending the intent, but I&amp;rsquo;ll double check this in jadx. While I&amp;rsquo;m here though, I&amp;rsquo;ll also check out the res directory that apktool produced. Inside the res/values/ directory there&amp;rsquo;s a strings.xml with the following contents:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-xml&#34;&gt;&amp;lt;?xml version=&amp;quot;1.0&amp;quot; encoding=&amp;quot;utf-8&amp;quot;?&amp;gt;
-&amp;lt;resources&amp;gt;
-    &amp;lt;string name=&amp;quot;android.permission._msg&amp;quot;&amp;gt;Msg permission for this app&amp;lt;/string&amp;gt;
-    &amp;lt;string name=&amp;quot;app_name&amp;quot;&amp;gt;SendAnIntentApplication&amp;lt;/string&amp;gt;
-    &amp;lt;string name=&amp;quot;dev_name&amp;quot;&amp;gt;Leetdev&amp;lt;/string&amp;gt;
-    &amp;lt;string name=&amp;quot;flag&amp;quot;&amp;gt;Qvq lbh guvax vg jbhyq or gung rnfl?&amp;lt;/string&amp;gt;
-    &amp;lt;string name=&amp;quot;git_user&amp;quot;&amp;gt;l33tdev42&amp;lt;/string&amp;gt;
-    &amp;lt;string name=&amp;quot;str1&amp;quot;&amp;gt;`wTtqnVfxfLtxKB}YWFqqnXaOIck`&amp;lt;/string&amp;gt;
-    &amp;lt;string name=&amp;quot;str2&amp;quot;&amp;gt;IIjsWa}iy&amp;lt;/string&amp;gt;
-    &amp;lt;string name=&amp;quot;str3&amp;quot;&amp;gt;TRytfrgooq|F{i-JovFBungFk&amp;lt;/string&amp;gt;
-    &amp;lt;string name=&amp;quot;str4&amp;quot;&amp;gt;H0l3kwjo1|+kdl^polr&amp;lt;/string&amp;gt;
-    &amp;lt;string name=&amp;quot;test&amp;quot;&amp;gt;Test String for debugging&amp;lt;/string&amp;gt;
-&amp;lt;/resources&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;I tried sending this flag in, but it didn&amp;rsquo;t work so it might be encoded. Some of the other strings are mysterious, however the git_user and dev_name strings stand out as interesting. Navigating to &lt;a href=&#34;https://github.com/l33tdev42/&#34;&gt;https://github.com/l33tdev42/&lt;/a&gt; takes us to the developers repository, and checking the commit history reveals a commit that has the message &amp;ldquo;Oops. removing the passcodes&amp;rdquo;. Clicking on this commit shows the build.gradle file along with the keystore config information:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-gradle&#34;&gt; -    signingConfigs {
- -        create(&amp;quot;release&amp;quot;) {
- -            storeFile = file(&amp;quot;leetdev_android.keystore&amp;quot;)
- -            storePassword = &amp;quot;!lPpR4UC6JYaUj&amp;quot;
- -            keyAlias = &amp;quot;appsKeys&amp;quot;
- -            keyPassword = &amp;quot;ctf{TheHairCutTookALoadOffMyMind}&amp;quot;
- -        }
- -    }
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Coincidentally, this keyPassword is the flag for &amp;ldquo;Can You Repo It?&amp;rdquo;. The keystore itself is located in the app directory. With the passwords and the keystore I can sign my own application with a matching signature, allowing an application I control to use the _MSG permission.&lt;/p&gt;
-
-&lt;p&gt;Opening the apk with jadx-gui decompiles it. All three of the activities besides main do a bunch of string operations that I&amp;rsquo;m not going to worry about right at this moment. More importantly, the following in MainActivity confirms that the _MSG permission is required to use the receiver:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;IntentFilter filter = new IntentFilter();
-filter.addAction(&amp;quot;com.ctf.INCOMING_INTENT&amp;quot;);
-registerReceiver(new Send_to_Activity(), filter, permission._MSG, null);
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;The Send_to_Activity activity selects one of the other activities based on the contents of the intent&amp;rsquo;s &amp;ldquo;msg&amp;rdquo; field:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public void onReceive(Context context, Intent intent) {
-        String msgText = intent.getStringExtra(&amp;quot;msg&amp;quot;);
-        if (msgText.equalsIgnoreCase(&amp;quot;ThisIsTheRealOne&amp;quot;)) {
-            context.startActivity(new Intent(context, ThisIsTheRealOne.class));
-        } else if (msgText.equalsIgnoreCase(&amp;quot;IsThisTheRealOne&amp;quot;)) {
-            context.startActivity(new Intent(context, IsThisTheRealOne.class));
-        } else if (msgText.equalsIgnoreCase(&amp;quot;DefinitelyNotThisOne&amp;quot;)) {
-            context.startActivity(new Intent(context, DefinitelyNotThisOne.class));
-        } else {
-            Toast.makeText(context, &amp;quot;Which Activity do you wish to interact with?&amp;quot;, 1).show();
-        }
-    }
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;And looking at the other activities shows us that they broadcast out a result which also requires the _MSG permission:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;Intent intent = new Intent();
-intent.setAction(&amp;quot;com.ctf.OUTGOING_INTENT&amp;quot;);
-intent.putExtra(&amp;quot;msg&amp;quot;, IsThisTheRealOne.this.perhapsThis(a, b, Utilities.doBoth(name.substring(0, name.length() - 2))));
-IsThisTheRealOne.this.sendBroadcast(intent, permission._MSG);
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;So the main idea is to create an application that can listen for the return broadcast; I can send the initial broadcast using adb since it&amp;rsquo;ll run with root permissions on the AVD.&lt;/p&gt;
-
-&lt;p&gt;There&amp;rsquo;s probably more than one way to do this, such as writing a new app that listens and prints to logcat the results then signing it with the key from the keystore pulled off the github account. But I&amp;rsquo;m lazy and just decided to run drozer on the device and use its broadcast sniffing functionality. In order to sniff the intent though, I needed to add the new permission to the manifest and resign it with the developers key. So, I extracted drozer with apktool, &lt;code&gt;apktool d drozer-agent-2.3.4.apk&lt;/code&gt;, then added the following two lines to it&amp;rsquo;s AndroidManifest.xml (the _SEND permission might be unnecessary but I added it anyhow):&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-xml&#34;&gt;&amp;lt;uses-permission android:name=&amp;quot;ctf.permission._MSG&amp;quot;/&amp;gt;
-&amp;lt;uses-permission android:name=&amp;quot;ctf.permission._SEND&amp;quot;/&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Then I rebuilt it, &lt;code&gt;apktool b drozer-agent-2.3.4/&lt;/code&gt;, which drops the new apk in &lt;code&gt;drozer-agent-2.3.4/dist/&lt;/code&gt;.&lt;/p&gt;
-
-&lt;p&gt;Next, I removed the existing signature from the apk by unzipping it, deleting the META_INF directory, then rezipping the contents into a new .apk (which is just a renamed .zip). Then, I signed with the new keystore and zipaligned the signed apk&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore leetdev_android.keystore drozer-agent-custom.apk appskeys
-zipalign -v 4 drozer-agent-custom.apk drozer-agent-custom-aligned.apk
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;I won&amp;rsquo;t go over how to setup the drozer agent and the drozer client setup since that&amp;rsquo;s covered elsewhere, but from the drozer command line I can setup the broadcast listener using the sniff package: &lt;code&gt;run app.broadcast.sniff --action com.ctf.OUTGOING_INTENT&lt;/code&gt;. I can then send intents using adb: &lt;code&gt;adb shell am broadcast -a com.ctf.INCOMING_INTENT -e msg &amp;lt;activity_name&amp;gt;&lt;/code&gt;. The results are below:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;#ADB window:
-adb shell am broadcast -a com.ctf.INCOMING_INTENT -e msg DefinitelyNotThisOne
-Broadcasting: Intent { act=com.ctf.INCOMING_INTENT (has extras) }
-Broadcast completed: result=0
-
-adb shell am broadcast -a com.ctf.INCOMING_INTENT -e msg IsThisTheRealOne Broadcasting: Intent { act=com.ctf.INCOMING_INTENT (has extras) }
-Broadcast completed: result=0
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;#Drozer Window:
-dz&amp;gt; run app.broadcast.sniff --action com.ctf.OUTGOING_INTENT
-[*] Broadcast receiver registered to sniff matching intents
-[*] Output is updated once a second. Press Control+C to exit.
-
-Action: com.ctf.OUTGOING_INTENT
-Raw: Intent { act=com.ctf.OUTGOING_INTENT flg=0x10 (has extras) }
-Extra: msg=Told you so! (java.lang.String)
-
-Action: com.ctf.OUTGOING_INTENT
-Raw: Intent { act=com.ctf.OUTGOING_INTENT flg=0x10 (has extras) }
-Extra: msg=Congratulation!YouFoundTheRightActivityHereYouGo-CTF{IDontHaveABadjokeSorry} (java.lang.String)
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;And that&amp;rsquo;s the flag!&lt;/p&gt;
-</description>
+      <description>Do you have have ill intentions?
+ This is an Android apk. The first thing I do is fire up the application to see what it does. I installed Android Studio and used the included SDK to fire up an Android Virtual Device (AVD). adb install illintentions.apk installs it. Running the app doesn&amp;rsquo;t do much, but does provide a hint that it can change activities through some Send_to_Activity function (probably an intent)</description>
     </item>
     
   </channel>

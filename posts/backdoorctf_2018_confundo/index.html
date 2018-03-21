@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Backdoorctf 2018 - Confundo | Veehan&#39;s Blog</title>
+    <link rel="stylesheet" href="http://veehan.github.io/css/style.css" />
+    <link rel="stylesheet" href="http://veehan.github.io/css/fonts.css" />
+    
+  </head>
+
+  <body>
+    <nav>
+    <ul class="menu">
+      
+      <li><a href="http://veehan.github.io/">Home</a></li>
+      
+      <li><a href="http://veehan.github.io/categories/">Categories</a></li>
+      
+    </ul>
+    <hr/>
+    </nav>
+
+<div class="article-meta">
+<h1><span class="title">Backdoorctf 2018 - Confundo</span></h1>
+
+<h2 class="date">2018/03/19</h2>
+</div>
+
+<main>
+
+
+<p>(BackdoorCTF requests that flags aren&rsquo;t included in write-ups, so I&rsquo;ll refrain from including it and solution code here.)</p>
+
+<p>The challenge is presented as a single file, confundo.v. The description hint simply states that the author wanted to write a challenge in an obscure language.</p>
+
+<p>Inspecting the file, it&rsquo;s immediately obvious this is a hardware description language, and if you&rsquo;ve worked with these before you&rsquo;ll probably recognize it as <a href="https://en.wikipedia.org/wiki/Verilog">Verilog</a> (if you haven&rsquo;t, googling some of the syntax markers like <code>endmodule</code> will make it evident pretty quickly).</p>
+
+<p>The file defines a module, <code>vga(clk)</code>, that takes a single clock signal as input with a few memory buffers defined, and another module used in <code>vga</code> to initialize it&rsquo;s memory buffers.</p>
+
+<p>In particular, <code>vga</code> module has a 1024 byte <code>graphicsMem</code> buffer. On each clock cycle, <code>vga</code> reads one byte from a memory buffer, manipulates it, and writes one byte to graphicsMem. On a hunch that this was where the flag was being written, I modified the <code>vga</code> module to print <code>graphicsMems</code>&rsquo;s contents after each clock cycle.</p>
+
+<p>Then I had to create a test bench that fed the module a clock signal. As the name implies, a test bench helps you test modules you&rsquo;ve written without hardware by simulating inputs.</p>
+
+<p>With a simple test bench that ran for a couple thousand clock cycles, I used <a href="http://iverilog.icarus.com/">Icarus Verilog</a> to run the simulation. Once that was installed:</p>
+
+<pre><code>$ iverilog test_bench.v
+$ ./a.out &gt; test_bench_out
+$ less test_bench_out
+</code></pre>
+
+<p>Checking the output from the last iteration of the test_bench run reveals the contents of graphics memory after all of the bytes have been written.</p>
+
+<p>It took me awhile to figure out what to do with the bytes, and I thought it might have been <a href="https://en.wikipedia.org/wiki/VGA-compatible_text_mode">VGA-compatible text mode</a> or <a href="https://en.wikipedia.org/wiki/BMP_file_format#Pixel_storage">Bitmap encoding</a>. Eventually though I realized all the bytes were in the ASCII range. I dumped the output into a Hex to ASCII converter and was greeted by the flag!</p>
+
+<p>Final note on the flag: After attempting to input various versions of the flag without success, I asked an organizer about it and the actual flag has _&rsquo;s and not -&rsquo;s.</p>
+
+<h2 id="additional-resources">Additional Resources</h2>
+
+<ul>
+<li><a href="https://stackoverflow.com/questions/33653121/using-display-in-verilog">https://stackoverflow.com/questions/33653121/using-display-in-verilog</a></li>
+<li><a href="https://embeddedmicro.com/blogs/tutorials/writing-test-benches">https://embeddedmicro.com/blogs/tutorials/writing-test-benches</a></li>
+<li><a href="https://stackoverflow.com/questions/24924956/verilog-testbench-clock">https://stackoverflow.com/questions/24924956/verilog-testbench-clock</a></li>
+</ul>
+
+</main>
+
+  <footer>
+  
+  
+  <hr/>
+  &copy; Veehan&rsquo;s Blog. All rights reserved. Powered by <a href="http://veehan.github.io/">Hugo</a> and the <a href="https://github.com/yihui/hugo-xmin">hugo-xmin</a> theme.
+  
+  </footer>
+  </body>
+</html>
+
